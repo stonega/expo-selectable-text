@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "expo-selectable-text": ["../src/index"],
+      "expo-selectable-text/*": ["../src/*"]
+    }
+  }
+}
