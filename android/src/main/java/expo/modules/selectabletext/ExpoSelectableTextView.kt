@@ -13,14 +13,10 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
 
   internal val textView = object : TextView(context) {
 
-
     override fun onTouchEvent(event: MotionEvent): Boolean {
-      Log.d("SelectableTextView", "onTouchEvent: action=${event.action}")
-
       val handled = super.onTouchEvent(event)
 
       if (event.action == MotionEvent.ACTION_UP) {
-        Log.d("DEBUG TAG", "TESTE ACTION UP ${selectionStart} ${selectionEnd}")
 
         val selStart = selectionStart
         val selEnd = selectionEnd

@@ -1,35 +1,37 @@
 import { ExpoSelectableText } from "expo-selectable-text";
-import { SafeAreaView, Text, View } from "react-native";
+import { FlatList, SafeAreaView } from "react-native";
 
 export default function App() {
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={styles.container}>
+      {/* Using with flatlist */}
+      <FlatList
+        data={[1, 2, 3, 4, 6]}
+        // You need to use this prop to avoid clipping the text
+        removeClippedSubviews={false}
+        renderItem={() => (
+          <ExpoSelectableText
+            style={{ height: 400 }}
+            onSelectionEnd={(event) => console.log(event.nativeEvent)}
+            fontSize={18}
+            text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa."
+          />
+        )}
+      />
+
+      {/* Just the component */}
+
       <ExpoSelectableText
+        style={{ height: 400 }}
         onSelectionEnd={(event) => console.log(event.nativeEvent)}
-        style={styles.containerText}
         fontSize={18}
-        text="testing my text right now testing text FOI!!!"
+        text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa."
       />
     </SafeAreaView>
   );
 }
 
 const styles = {
-  groupHeader: {
-    fontSize: 20,
-    marginBottom: 20,
-  },
-  containerText: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.1)",
-  },
-  group: {
-    flex: 1,
-    margin: 20,
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 20,
-  },
   container: {
     flex: 1,
     backgroundColor: "#eee",
