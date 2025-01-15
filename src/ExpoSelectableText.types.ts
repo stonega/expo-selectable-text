@@ -1,19 +1,13 @@
-import type { StyleProp, ViewStyle } from 'react-native';
+import type { StyleProp, ViewStyle } from "react-native";
 
 export type OnLoadEventPayload = {
-  url: string;
-};
-
-export type ExpoSelectableTextModuleEvents = {
-  onChange: (params: ChangeEventPayload) => void;
-};
-
-export type ChangeEventPayload = {
-  value: string;
+  text: string;
+  selectionStart: number;
+  selectionEnd: number;
 };
 
 export type ExpoSelectableTextViewProps = {
-  url: string;
-  onLoad: (event: { nativeEvent: OnLoadEventPayload }) => void;
+  text: string;
+  onSelectionEnd: (event: { nativeEvent: OnLoadEventPayload }) => void;
   style?: StyleProp<ViewStyle>;
 };

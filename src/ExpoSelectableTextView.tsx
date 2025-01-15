@@ -1,11 +1,13 @@
-import { requireNativeView } from 'expo';
-import * as React from 'react';
+import { requireNativeViewManager } from "expo-modules-core";
+import * as React from "react";
 
-import { ExpoSelectableTextViewProps } from './ExpoSelectableText.types';
+import { ExpoSelectableTextViewProps } from "./ExpoSelectableText.types";
 
 const NativeView: React.ComponentType<ExpoSelectableTextViewProps> =
-  requireNativeView('ExpoSelectableText');
+  requireNativeViewManager("ExpoSelectableText");
 
-export default function ExpoSelectableTextView(props: ExpoSelectableTextViewProps) {
+export default function ExpoSelectableTextView(
+  props: ExpoSelectableTextViewProps
+) {
   return <NativeView {...props} />;
 }
