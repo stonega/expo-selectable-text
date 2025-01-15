@@ -11,9 +11,7 @@ Creating an iOS implementation using SwiftUI is part of my future plans.
 # Installating the library
   
 ```
-
 npm install expo-selectable-text
-
 ```
     
 
