@@ -6,7 +6,16 @@ A Text component that supports text selection on Android.
 Currently, it only works on Android, as similar functionality can be achieved on iOS by using a TextInput with onSelectionChange and onTouchEnd.
 
 Creating an iOS implementation using SwiftUI is part of my future plans.  
+
+
+# Installating the library
   
+```
+
+npm install expo-selectable-text
+
+```
+    
 
 #### Android
 
@@ -43,16 +52,6 @@ Using FlatList:
         )}
       />
 ```   
-
-
-# Installating the library
-  
-```
-
-npm install expo-selectable-text
-
-```
-  
 
 # Contributing
 
