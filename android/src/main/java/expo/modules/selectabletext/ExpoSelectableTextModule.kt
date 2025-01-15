@@ -1,6 +1,5 @@
 package expo.modules.selectabletext
 
-import android.graphics.Typeface
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -15,10 +14,6 @@ class ExpoSelectableTextModule : Module() {
     View(ExpoSelectableTextView::class) {
       Prop("text") {view: ExpoSelectableTextView, text: String ->
         view.textView.text = text.toString()
-      }
-
-      Prop("fontFamily") {view: ExpoSelectableTextView, fontFamily: Typeface ->
-        view.textView.typeface = fontFamily
       }
 
       Prop("fontSize") {view: ExpoSelectableTextView, fontSize: Float ->

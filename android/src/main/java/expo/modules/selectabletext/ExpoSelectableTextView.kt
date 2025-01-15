@@ -1,7 +1,6 @@
 package expo.modules.selectabletext
 
 import android.content.Context
-import android.util.Log
 import android.view.MotionEvent
 import android.widget.TextView
 import expo.modules.kotlin.AppContext
