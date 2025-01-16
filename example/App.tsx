@@ -1,4 +1,4 @@
-import { ExpoSelectableText } from "expo-selectable-text";
+import { ExpoSelectableTextView } from "expo-selectable-text";
 import { SafeAreaView } from "react-native";
 
 export default function App() {
@@ -19,7 +19,7 @@ export default function App() {
         )}
       /> */}
 
-      <ExpoSelectableText
+      <ExpoSelectableTextView
         style={{ flex: 1 }}
         onSelectionEnd={(event) => alert(JSON.stringify(event.nativeEvent))}
         fontSize={18}
