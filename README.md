@@ -51,6 +51,36 @@ Using FlatList:
       />
 ```   
 
+To use a custom font family, you must configure it with Expo Fonts.
+
+```
+npx expo install expo-font
+```
+
+```
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-font",
+        {
+          "fonts": ["./assets/fonts/Inter-Black.otf"]
+        }
+      ]
+    ]
+  }
+}
+```
+
+```
+  <ExpoSelectableText
+  ...
+  fontFamily={"Inter-Black"}
+  />
+```
+
+
+
 # Contributing
 
 Contributions are very welcome! 

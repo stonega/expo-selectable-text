@@ -1,7 +1,16 @@
+import { useFonts } from "expo-font";
 import { ExpoSelectableTextView } from "expo-selectable-text";
-import { SafeAreaView } from "react-native";
+import { SafeAreaView, Text } from "react-native";
 
 export default function App() {
+  const [loaded] = useFonts({
+    "Jersey-Regular": require("./assets/fonts/Jersey-Regular.ttf"),
+  });
+
+  if (!loaded) {
+    return <Text>Loading</Text>;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Using with flatlist */}
@@ -22,7 +31,8 @@ export default function App() {
       <ExpoSelectableTextView
         style={{ flex: 1 }}
         onSelectionEnd={(event) => alert(JSON.stringify(event.nativeEvent))}
-        fontSize={18}
+        fontSize={30}
+        fontFamily="Jersey-Regular"
         text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa."
       />
     </SafeAreaView>
