@@ -10,5 +10,6 @@ export type ExpoSelectableTextViewProps = {
   text: string;
   onSelectionEnd: (event: { nativeEvent: OnLoadEventPayload }) => void;
   fontSize?: number;
+  fontFamily?: string;
   style?: StyleProp<ViewStyle>;
 };

@@ -1,6 +1,8 @@
 package expo.modules.selectabletext
 
 import android.content.Context
+import android.graphics.Typeface
+import android.util.Log
 import android.view.MotionEvent
 import android.widget.TextView
 import expo.modules.kotlin.AppContext
@@ -16,11 +18,10 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
       val handled = super.onTouchEvent(event)
 
       if (event.action == MotionEvent.ACTION_UP) {
-
         val selStart = selectionStart
         val selEnd = selectionEnd
-        if (selStart != -1 && selEnd != -1) {
 
+        if (selStart != -1 && selEnd != -1) {
           val selectedText: String = if (selStart < selEnd) {
             text.substring(selStart, selEnd)
           } else {
@@ -39,25 +40,39 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
   }.apply {
     layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
     setTextIsSelectable(true)
-
-    // TODO: Make it dynamic so the user can select different options in the context menu
-    customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
-      override fun onCreateActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
-        return false
-      }
-      override fun onPrepareActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
-        return false
-      }
-      override fun onActionItemClicked(mode: android.view.ActionMode?, item: android.view.MenuItem?): Boolean {
-        return false
-      }
-      override fun onDestroyActionMode(mode: android.view.ActionMode?) {
-        // No cleanup required by default
-      }
-    }
+    customSelectionActionModeCallback = createCustomSelectionActionModeCallback()
   }
 
   init {
     addView(textView)
+  }
+
+  private fun fontFileExists(path: String, fileName: String): Boolean {
+    return context.assets.list(path)?.contains(fileName) == true
+  }
+
+  fun setFontFamily(fontName: String) {
+    val assetManager = context.assets
+
+    try {
+      val fontFileName = when {
+        fontFileExists("fonts", "$fontName.ttf") -> "fonts/$fontName.ttf"
+        fontFileExists("fonts", "$fontName.otf") -> "fonts/$fontName.otf"
+        else -> throw IllegalStateException("Font file not found for: $fontName")
+      }
+      textView.typeface = Typeface.createFromAsset(assetManager, fontFileName)
+    } catch (e: Exception) {
+      Log.e("ExpoSelectableTextView", e.toString())
+      textView.typeface = Typeface.DEFAULT
+    }
+  }
+
+  private fun createCustomSelectionActionModeCallback(): android.view.ActionMode.Callback {
+    return object : android.view.ActionMode.Callback {
+      override fun onCreateActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean = false
+      override fun onPrepareActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean = false
+      override fun onActionItemClicked(mode: android.view.ActionMode?, item: android.view.MenuItem?): Boolean = false
+      override fun onDestroyActionMode(mode: android.view.ActionMode?) {}
+    }
   }
 }

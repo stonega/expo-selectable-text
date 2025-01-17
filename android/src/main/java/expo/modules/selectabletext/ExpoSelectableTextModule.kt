@@ -1,5 +1,7 @@
 package expo.modules.selectabletext
 
+import android.graphics.Typeface
+import android.util.Log
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -18,6 +20,10 @@ class ExpoSelectableTextModule : Module() {
 
       Prop("fontSize") {view: ExpoSelectableTextView, fontSize: Float ->
         view.textView.textSize = fontSize
+      }
+
+      Prop("fontFamily") {view: ExpoSelectableTextView, fontFamily: String ->
+       view.setFontFamily(fontFamily)
       }
 
       Events("onSelectionEnd")
