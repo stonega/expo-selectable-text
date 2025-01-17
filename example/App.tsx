@@ -1,10 +1,9 @@
-import { useFonts, loadAsync } from "expo-font";
+import { useFonts } from "expo-font";
 import { ExpoSelectableTextView } from "expo-selectable-text";
-import { useEffect } from "react";
 import { SafeAreaView, Text } from "react-native";
 
 export default function App() {
-  const [loaded, error] = useFonts({
+  const [loaded] = useFonts({
     "Jersey-Regular": require("./assets/fonts/Jersey-Regular.ttf"),
   });
 
@@ -36,10 +35,6 @@ export default function App() {
         fontFamily="Jersey-Regular"
         text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa."
       />
-
-      <Text style={{ fontSize: 60, fontFamily: "Jersey-Regular", flex: 1 }}>
-        Test font family
-      </Text>
     </SafeAreaView>
   );
 }
