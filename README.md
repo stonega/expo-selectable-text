@@ -23,9 +23,9 @@ npm install expo-selectable-text
 #### Examples
 
 ```tsx
-import { ExpoSelectableText } from "expo-selectable-text";
+import { ExpoSelectableTextView } from "expo-selectable-text";
 
-<ExpoSelectableText
+<ExpoSelectableTextView
         style={{ flex:1 }}
         onSelectionEnd={(event) => alert(JSON.stringify(event.nativeEvent))}
         fontSize={18}
@@ -41,7 +41,7 @@ Using FlatList:
         // You need to use this prop to avoid clipping the text
         removeClippedSubviews={false}
         renderItem={() => (
-          <ExpoSelectableText
+          <ExpoSelectableTextView
             style={{ height: 400 }}
             onSelectionEnd={(event) => alert(JSON.stringify(event.nativeEvent))}
             fontSize={18}
