@@ -51,7 +51,7 @@ Using FlatList:
       />
 ```   
 
-If you need to use a custom font family you need to use expo fonts:
+To use a custom font family, you must configure it with Expo Fonts.
 
 ```
 npx expo install expo-font
