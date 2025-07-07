@@ -35,14 +35,24 @@ public class ExpoSelectableTextModule: Module {
     // Enables the module to be used as a native view. Definition components that are accepted as part of the
     // view definition: Prop, Events.
     View(ExpoSelectableTextView.self) {
-      // Defines a setter for the `url` prop.
-      Prop("url") { (view: ExpoSelectableTextView, url: URL) in
-        if view.webView.url != url {
-          view.webView.load(URLRequest(url: url))
+      // Defines a setter for the `text` prop.
+      Prop("text") { (view: ExpoSelectableTextView, text: String?) in
+        view.textView.text = text
+      }
+
+      // Defines a setter for the `fontSize` prop.
+      Prop("fontSize") { (view: ExpoSelectableTextView, fontSize: Double?) in
+        view.textView.font = view.textView.font?.withSize(CGFloat(fontSize ?? 14.0))
+      }
+
+      // Defines a setter for the `fontFamily` prop.
+      Prop("fontFamily") { (view: ExpoSelectableTextView, fontFamily: String?) in
+        if let fontFamily = fontFamily, let font = UIFont(name: fontFamily, size: view.textView.font?.pointSize ?? 14.0) {
+          view.textView.font = font
         }
       }
 
-      Events("onLoad")
+      Events("onSelectionEnd")
     }
   }
 }

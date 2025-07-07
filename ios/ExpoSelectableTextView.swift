@@ -1,38 +1,55 @@
 import ExpoModulesCore
-import WebKit
+import UIKit
 
-// This view will be used as a native component. Make sure to inherit from `ExpoView`
-// to apply the proper styling (e.g. border radius and shadows).
-class ExpoSelectableTextView: ExpoView {
-  let webView = WKWebView()
-  let onLoad = EventDispatcher()
-  var delegate: WebViewDelegate?
+class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
+  let textView = UITextView()
+  let onSelectionEnd = EventDispatcher()
+
+  var selectedText: String = ""
 
   required init(appContext: AppContext? = nil) {
     super.init(appContext: appContext)
     clipsToBounds = true
-    delegate = WebViewDelegate { url in
-      self.onLoad(["url": url])
-    }
-    webView.navigationDelegate = delegate
-    addSubview(webView)
+    textView.isEditable = false
+    textView.isSelectable = true
+    textView.delegate = self
+    addSubview(textView)
   }
 
   override func layoutSubviews() {
-    webView.frame = bounds
-  }
-}
-
-class WebViewDelegate: NSObject, WKNavigationDelegate {
-  let onUrlChange: (String) -> Void
-
-  init(onUrlChange: @escaping (String) -> Void) {
-    self.onUrlChange = onUrlChange
+    textView.frame = bounds
   }
 
-  func webView(_ webView: WKWebView, didFinish navigation: WKNavigation) {
-    if let url = webView.url {
-      onUrlChange(url.absoluteString)
+  func textViewDidChangeSelection(_ textView: UITextView) {
+    guard let textRange = textView.selectedTextRange,
+          let selectedText = textView.text(in: textRange) else {
+      return
+    }
+    self.selectedText = selectedText
+  }
+
+  @objc func handleTextViewTap(_ gestureRecognizer: UITapGestureRecognizer) {
+    if gestureRecognizer.state == .ended {
+        let selectedRange = textView.selectedRange
+        let selectedText = (textView.text as NSString).substring(with: selectedRange)
+
+        if !selectedText.isEmpty {
+             onSelectionEnd([
+                "text": selectedText,
+                "start": selectedRange.location,
+                "end": selectedRange.location + selectedRange.length
+            ])
+        }
+    }
+  }
+
+  override func didMoveToWindow() {
+    super.didMoveToWindow()
+    if window != nil {
+        let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleTextViewTap(_:)))
+        textView.addGestureRecognizer(tapGestureRecognizer)
+    } else {
+        textView.gestureRecognizers?.forEach(textView.removeGestureRecognizer)
     }
   }
 }

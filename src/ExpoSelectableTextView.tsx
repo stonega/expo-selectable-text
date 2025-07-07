@@ -1,7 +1,7 @@
 import { requireNativeViewManager } from "expo-modules-core";
 import * as React from "react";
 
-import { ExpoSelectableTextViewProps } from "./ExpoSelectableText.types";
+import { ExpoSelectableTextViewProps, SelectionEndEventPayload } from "./ExpoSelectableText.types";
 
 const NativeView: React.ComponentType<ExpoSelectableTextViewProps> =
   requireNativeViewManager("ExpoSelectableText");
@@ -9,5 +9,13 @@ const NativeView: React.ComponentType<ExpoSelectableTextViewProps> =
 export default function ExpoSelectableTextView(
   props: ExpoSelectableTextViewProps
 ) {
-  return <NativeView {...props} />;
+  const { onSelectionEnd, ...otherProps } = props;
+
+  const _onSelectionEnd = (event: { nativeEvent: SelectionEndEventPayload }) => {
+    if (onSelectionEnd) {
+      onSelectionEnd(event.nativeEvent);
+    }
+  };
+
+  return <NativeView {...otherProps} onSelectionEnd={_onSelectionEnd} />;
 }
