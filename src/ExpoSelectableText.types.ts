@@ -4,6 +4,14 @@ export type SelectionEndEventPayload = {
   text: string;
   start: number;
   end: number;
+  length: number;
+  cleared: boolean;
+  rect: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
 };
 
 export type ExpoSelectableTextViewProps = {
@@ -17,3 +25,7 @@ export type ExpoSelectableTextViewProps = {
   lineHeight?: number;
   style?: StyleProp<ViewStyle>;
 };
+
+export interface ExpoSelectableTextViewRef {
+  clearSelection(): Promise<void>;
+}

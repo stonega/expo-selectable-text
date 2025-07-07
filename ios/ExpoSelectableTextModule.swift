@@ -37,12 +37,18 @@ public class ExpoSelectableTextModule: Module {
     View(ExpoSelectableTextView.self) {
       // Defines a setter for the `text` prop.
       Prop("text") { (view: ExpoSelectableTextView, text: String?) in
-        view.textView.text = text
+        view.setText(text)
       }
 
       // Defines a setter for the `fontSize` prop.
       Prop("fontSize") { (view: ExpoSelectableTextView, fontSize: Double?) in
-        view.textView.font = view.textView.font?.withSize(CGFloat(fontSize ?? 14.0))
+        let size = CGFloat(fontSize ?? 14.0)
+        // Use existing font family/weight if available, otherwise use system font
+        if let currentFont = view.textView.font {
+          view.textView.font = currentFont.withSize(size)
+        } else {
+          view.textView.font = UIFont.systemFont(ofSize: size)
+        }
       }
 
       // Defines a setter for the `fontFamily` prop.
@@ -52,7 +58,51 @@ public class ExpoSelectableTextModule: Module {
         }
       }
 
+      // Defines a setter for the `lineHeight` prop.
+      Prop("lineHeight") { (view: ExpoSelectableTextView, lineHeight: Double?) in
+        guard let lineHeight = lineHeight else { return }
+        
+        let currentFont = view.textView.font ?? UIFont.systemFont(ofSize: 14.0)
+        let fontLineHeight = currentFont.lineHeight
+        let desiredLineHeight = CGFloat(lineHeight)
+        
+        // Create paragraph style with line height
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.minimumLineHeight = desiredLineHeight
+        paragraphStyle.maximumLineHeight = desiredLineHeight
+        
+        // Apply to existing text if available
+        if let text = view.textView.text, !text.isEmpty {
+          let attributedText = NSMutableAttributedString(string: text)
+          attributedText.addAttribute(.font, value: currentFont, range: NSRange(location: 0, length: text.count))
+          attributedText.addAttribute(.paragraphStyle, value: paragraphStyle, range: NSRange(location: 0, length: text.count))
+          view.textView.attributedText = attributedText
+        } else {
+          // Store for future text updates
+          view.pendingLineHeight = desiredLineHeight
+        }
+      }
+
+      // Defines a setter for the `color` prop.
+      Prop("color") { (view: ExpoSelectableTextView, color: String?) in
+        if let color = color {
+          view.textView.textColor = view.parseColor(color)
+        }
+      }
+
+      // Defines a setter for the `selectionColor` prop.
+      Prop("selectionColor") { (view: ExpoSelectableTextView, selectionColor: String?) in
+        if let selectionColor = selectionColor {
+          view.textView.tintColor = view.parseColor(selectionColor)
+        }
+      }
+
       Events("onSelectionEnd")
+
+      // Add View Command for clearing selection
+      AsyncFunction("clearSelection") { (view: ExpoSelectableTextView) in
+        view.clearSelection()
+      }
     }
   }
 }

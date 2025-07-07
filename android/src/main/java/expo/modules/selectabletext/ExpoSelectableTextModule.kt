@@ -40,6 +40,11 @@ class ExpoSelectableTextModule : Module() {
       }
 
       Events("onSelectionEnd")
+
+      // Add View Command for clearing selection
+      AsyncFunction("clearSelection") { view: ExpoSelectableTextView ->
+        view.clearSelection()
+      }
     }
   }
 }
