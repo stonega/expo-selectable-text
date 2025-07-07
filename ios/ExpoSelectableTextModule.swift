@@ -16,7 +16,7 @@ public class ExpoSelectableTextModule: Module {
     ])
 
     // Defines event names that the module can send to JavaScript.
-    Events("onChange")
+    Events("onChange", "onSelectionEnd", "onSelecting")
 
     // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
     Function("hello") {
@@ -97,7 +97,7 @@ public class ExpoSelectableTextModule: Module {
         }
       }
 
-      Events("onSelectionEnd")
+      Events("onSelectionEnd", "onSelecting")
 
       // Add View Command for clearing selection
       AsyncFunction("clearSelection") { (view: ExpoSelectableTextView) in

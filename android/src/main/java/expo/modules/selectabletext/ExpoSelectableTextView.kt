@@ -6,8 +6,10 @@ import android.graphics.Rect
 import android.graphics.Typeface
 import android.os.Handler
 import android.os.Looper
+import android.text.Selection
 import android.util.Log
 import android.view.MotionEvent
+import android.view.ViewGroup
 import android.widget.TextView
 import expo.modules.kotlin.AppContext
 import expo.modules.kotlin.viewevent.EventDispatcher
@@ -17,78 +19,27 @@ import kotlin.math.sqrt
 
 class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoView(context, appContext) {
   private val onSelectionEnd by EventDispatcher()
+  private val onSelecting by EventDispatcher()
   private val onHighlight by EventDispatcher()
 
   private var selectedText: String = ""
-  private var selectionTimer: Handler? = null
-  private val selectionRunnable = Runnable { handleSelectionEnd() }
   private var lastSelectionStart = -1
   private var lastSelectionEnd = -1
+  private var selectionTimer: Handler? = null
+  private val selectionRunnable = Runnable { handleSelectionEnd() }
 
   internal val textView = object : TextView(context) {
-    private var touchDownX: Float = 0f
-    private var touchDownY: Float = 0f
-    private var selectionCheckHandler: Handler? = null
-    private val selectionCheckRunnable = Runnable { checkSelectionChanges() }
-
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-      when (event.action) {
-        MotionEvent.ACTION_DOWN -> {
-          touchDownX = event.x
-          touchDownY = event.y
-          // Start monitoring selection changes
-          startSelectionMonitoring()
-        }
-        MotionEvent.ACTION_UP -> {
-          val deltaX = abs(event.x - touchDownX)
-          val deltaY = abs(event.y - touchDownY)
-          val distance = sqrt(deltaX * deltaX + deltaY * deltaY)
-          
-          val selStart = selectionStart
-          val selEnd = selectionEnd
-          val hasSelection = selStart != -1 && selEnd != -1 && selStart != selEnd
-          
-          // If it's a tap (small movement) and we have a selection, clear it
-          if (distance < 30 && hasSelection) {
-            // Use a delay to ensure system selection gestures complete
-            Handler(Looper.getMainLooper()).postDelayed({
-              // Double-check we still have a selection
-              if (hasSelection()) {
-                this@ExpoSelectableTextView.clearSelection()
-              }
-            }, 300)
-          }
-          
-          // Stop monitoring selection changes after a delay
-          Handler(Looper.getMainLooper()).postDelayed({
-            stopSelectionMonitoring()
-          }, 1000)
-        }
-      }
-      return super.onTouchEvent(event)
-    }
-
-    private fun startSelectionMonitoring() {
-      selectionCheckHandler = Handler(Looper.getMainLooper())
-      selectionCheckHandler?.post(selectionCheckRunnable)
-    }
-
-    private fun stopSelectionMonitoring() {
-      selectionCheckHandler?.removeCallbacks(selectionCheckRunnable)
-      selectionCheckHandler = null
-    }
-
-    private fun checkSelectionChanges() {
-      val selStart = selectionStart
-      val selEnd = selectionEnd
+    
+    override fun onSelectionChanged(selStart: Int, selEnd: Int) {
+      super.onSelectionChanged(selStart, selEnd)
+      
+      // Cancel any existing timer
+      selectionTimer?.removeCallbacks(selectionRunnable)
       
       // Check if selection has changed
       if (selStart != lastSelectionStart || selEnd != lastSelectionEnd) {
         lastSelectionStart = selStart
         lastSelectionEnd = selEnd
-        
-        // Cancel any existing timer
-        selectionTimer?.removeCallbacks(selectionRunnable)
         
         if (selStart != -1 && selEnd != -1 && selStart != selEnd) {
           // Selection exists, update selectedText and start timer
@@ -99,13 +50,29 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
           }
           
           if (selectedText.isNotEmpty()) {
-            // Start a timer to detect when selection has stopped
+            // Fire onSelecting event for real-time updates
+            val selectionRect = getSelectionRect(selStart, selEnd)
+            val density = context.resources.displayMetrics.density
+            val rectInDp = mapOf(
+              "x" to (selectionRect.left / density),
+              "y" to (selectionRect.top / density),
+              "width" to (selectionRect.width() / density),
+              "height" to (selectionRect.height() / density)
+            )
+            onSelecting(mapOf(
+              "text" to selectedText,
+              "start" to selStart,
+              "end" to selEnd,
+              "length" to abs(selEnd - selStart),
+              "rect" to rectInDp
+            ))
+            
+            // Start a timer to detect when selection has stopped changing
             selectionTimer = Handler(Looper.getMainLooper())
-            selectionTimer?.postDelayed(selectionRunnable, 700)
+            selectionTimer?.postDelayed(selectionRunnable, 500)
           }
         } else if (selectedText.isNotEmpty()) {
           // Selection was cleared
-          val previousText = selectedText
           selectedText = ""
           
           // Notify that selection was cleared
@@ -124,19 +91,42 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
           ))
         }
       }
-      
-      // Continue monitoring if handler is still active
-      selectionCheckHandler?.postDelayed(selectionCheckRunnable, 100)
     }
 
   }.apply {
-    layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+    layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
     setTextIsSelectable(true)
     customSelectionActionModeCallback = createCustomSelectionActionModeCallback()
   }
 
   init {
     addView(textView)
+  }
+
+  private fun createCustomSelectionActionModeCallback(): android.view.ActionMode.Callback {
+    return object : android.view.ActionMode.Callback {
+      override fun onCreateActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
+        // Allow action mode to be created but clear all menu items
+        menu?.clear()
+        return true
+      }
+      
+      override fun onPrepareActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
+        // Clear menu items in prepare phase as well
+        menu?.clear()
+        return true
+      }
+      
+      override fun onActionItemClicked(mode: android.view.ActionMode?, item: android.view.MenuItem?): Boolean {
+        return false
+      }
+      
+      override fun onDestroyActionMode(mode: android.view.ActionMode?) {
+        // Clean up timer when action mode is destroyed
+        selectionTimer?.removeCallbacks(selectionRunnable)
+        selectionTimer = null
+      }
+    }
   }
 
   private fun handleSelectionEnd() {
@@ -153,18 +143,21 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
       if (selectedText.isNotEmpty()) {
         // Get the selection rectangle for position information
         val selectionRect = getSelectionRect(selStart, selEnd)
+        val density = context.resources.displayMetrics.density
+
+        val rectInDp = mapOf(
+          "x" to (selectionRect.left / density),
+          "y" to (selectionRect.top / density),
+          "width" to (selectionRect.width() / density),
+          "height" to (selectionRect.height() / density)
+        )
         
         onSelectionEnd(mapOf(
           "text" to selectedText, 
           "start" to selStart, 
           "end" to selEnd,
           "length" to abs(selEnd - selStart),
-          "rect" to mapOf(
-            "x" to selectionRect.left,
-            "y" to selectionRect.top,
-            "width" to selectionRect.width(),
-            "height" to selectionRect.height()
-          )
+          "rect" to rectInDp
         ))
       }
     }
@@ -173,21 +166,41 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
   private fun getSelectionRect(start: Int, end: Int): Rect {
     val layout = textView.layout
     val rect = Rect()
-    
+
     if (layout != null) {
-      val startLine = layout.getLineForOffset(start)
-      val endLine = layout.getLineForOffset(end)
+      val selStart = if (start <= end) start else end
+      val selEnd = if (start <= end) end else start
+
+      val startLine = layout.getLineForOffset(selStart)
+
+      // 1. Get coordinates relative to the text layout's origin.
+      val startX = layout.getPrimaryHorizontal(selStart)
+      val lineTop = layout.getLineTop(startLine)
+
+      // 2. Adjust for the TextView's own padding and scroll.
+      // This gives the final coordinates relative to the ExpoSelectableTextView component.
+      val finalX = startX + textView.paddingLeft - textView.scrollX
+      val finalY = lineTop + textView.paddingTop - textView.scrollY
       
-      // Get the bounds of the selection
-      val startX = layout.getPrimaryHorizontal(start)
-      val endX = layout.getPrimaryHorizontal(end)
-      val startY = layout.getLineTop(startLine)
-      val endY = layout.getLineBottom(endLine)
+      // --- Calculate width and height ---
+      val endLine = layout.getLineForOffset(selEnd)
+      val endX = layout.getPrimaryHorizontal(selEnd)
+      val lineBottom = layout.getLineBottom(endLine)
+
+      val width = if (startLine == endLine) {
+        // Single line: width is the horizontal distance between start and end.
+        abs(endX.toInt() - startX.toInt())
+      } else {
+        // Multi-line: width is the distance from selection start to the end of the first line.
+        (layout.getLineRight(startLine) - startX).toInt()
+      }
       
-      rect.left = startX.toInt()
-      rect.top = startY
-      rect.right = endX.toInt()
-      rect.bottom = endY
+      val height = lineBottom - lineTop
+      
+      rect.left = finalX.toInt()
+      rect.top = finalY
+      rect.right = finalX.toInt() + width
+      rect.bottom = finalY + height
     }
     
     return rect
@@ -224,42 +237,17 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
     }
   }
 
-  private fun createCustomSelectionActionModeCallback(): android.view.ActionMode.Callback {
-    return object : android.view.ActionMode.Callback {
-      override fun onCreateActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
-        // Disable all menu items
-        return false
-      }
-      
-      override fun onPrepareActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
-        return false
-      }
-      
-      override fun onActionItemClicked(mode: android.view.ActionMode?, item: android.view.MenuItem?): Boolean {
-        return false
-      }
-      
-      override fun onDestroyActionMode(mode: android.view.ActionMode?) {
-        // Clean up timer when action mode is destroyed
-        selectionTimer?.removeCallbacks(selectionRunnable)
-        selectionTimer = null
-      }
-    }
-  }
-
   fun clearSelection() {
     // Get current selection info before clearing
     val selStart = textView.selectionStart
     val selEnd = textView.selectionEnd
     val wasSelected = selStart != -1 && selEnd != -1 && selStart != selEnd
     
-    // Cancel any pending selection timer
-    selectionTimer?.removeCallbacks(selectionRunnable)
-    selectionTimer = null
-    
     // Clear the selection
     textView.clearFocus()
-    textView.setSelection(0, 0)
+    if (textView.text is android.text.Spannable) {
+      Selection.removeSelection(textView.text as android.text.Spannable)
+    }
     selectedText = ""
     
     // Fire onSelectionEnd event to notify that selection was cleared

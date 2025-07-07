@@ -52,6 +52,7 @@ class CustomTextView: UITextView {
 class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
   let textView = CustomTextView()
   let onSelectionEnd = EventDispatcher()
+  let onSelecting = EventDispatcher()
 
   var selectedText: String = ""
   private var selectionTimer: Timer?
@@ -102,6 +103,26 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
     
     let newSelectedText = (textView.text as NSString).substring(with: selectedRange)
     self.selectedText = newSelectedText
+    
+    // Fire onSelecting event for real-time updates
+    var selectionRect = CGRect.zero
+    if let startPosition = textView.position(from: textView.beginningOfDocument, offset: selectedRange.location),
+       let endPosition = textView.position(from: textView.beginningOfDocument, offset: selectedRange.location + selectedRange.length),
+       let textRange = textView.textRange(from: startPosition, to: endPosition) {
+      selectionRect = textView.firstRect(for: textRange)
+    }
+    onSelecting([
+      "text": newSelectedText,
+      "start": selectedRange.location,
+      "end": selectedRange.location + selectedRange.length,
+      "length": selectedRange.length,
+      "rect": [
+        "x": selectionRect.origin.x,
+        "y": selectionRect.origin.y,
+        "width": selectionRect.size.width,
+        "height": selectionRect.size.height
+      ]
+    ])
     
     // Start a timer to detect when selection has stopped
     // Use a longer delay to ensure selection is stable

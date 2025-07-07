@@ -39,7 +39,7 @@ class ExpoSelectableTextModule : Module() {
         view.textView.setLineSpacing(extraSpacing, 1.0f)
       }
 
-      Events("onSelectionEnd")
+      Events("onSelectionEnd", "onSelecting")
 
       // Add View Command for clearing selection
       AsyncFunction("clearSelection") { view: ExpoSelectableTextView ->

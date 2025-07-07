@@ -1,8 +1,8 @@
-import React, { forwardRef, useImperativeHandle, useRef } from 'react';
-import { requireNativeView } from 'expo';
-import type { ExpoSelectableTextViewProps } from './ExpoSelectableText.types';
+import React, { forwardRef, useImperativeHandle, useRef } from "react";
+import { requireNativeView } from "expo";
+import type { ExpoSelectableTextViewProps } from "./ExpoSelectableText.types";
 
-const NativeView = requireNativeView('ExpoSelectableText');
+const NativeView = requireNativeView("ExpoSelectableText");
 
 export interface ExpoSelectableTextViewRef {
   clearSelection(): Promise<void>;

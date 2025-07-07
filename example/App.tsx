@@ -38,22 +38,22 @@ export default function App() {
       setShowPopup(false);
       return;
     }
-    
     if (text && text.trim().length > 0) {
       setSelectedText(text);
       setSelectionRect(rect);
       setShowPopup(true);
-      
       // Calculate position immediately
       if (containerRef.current) {
         containerRef.current.measureInWindow((x, y, width, height) => {
           const screenWidth = Dimensions.get('window').width;
           const popupWidth = 150;
           const popupHeight = 50;
-          
+          console.log("x:", x);
+          console.log("y:", y);
+          console.log("rect.x:", rect.x);
+          console.log("rect.y:", rect.y);
           let popupX = x + rect.x + 5;
           let popupY = y + rect.y - popupHeight - 5;
-          
           // Adjust if popup goes off screen
           if (popupX + popupWidth > screenWidth) {
             popupX = screenWidth - popupWidth - 10;
@@ -64,7 +64,6 @@ export default function App() {
           if (popupY < 50) {
             popupY = y + rect.y + rect.height + 15 + 5;
           }
-          
           setPopupPosition({ x: popupX, y: popupY });
         });
       }
@@ -84,11 +83,15 @@ export default function App() {
       <View style={styles.container}>
         <Text style={styles.title}>ExpoSelectableText</Text>
         <Text style={styles.platformText}>Running on: {Platform.OS}</Text>
-        <View ref={containerRef} style={{ width: '100%', height: 300 }}>
+        <View ref={containerRef} style={{ width: '100%', marginTop: 20 }}>
           <ExpoSelectableTextView
             ref={textViewRef}
             style={styles.selectableTextView}
             onSelectionEnd={handleSelectionEnd}
+            onSelecting={() => {
+              console.log("Selecting fired");
+              setShowPopup(false);
+            }}
             fontSize={20}
             lineHeight={30}
             fontFamily={"Jersey-Regular"}
@@ -163,31 +166,14 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
   selectableTextView: {
-    width: '100%',
     height: 300,
-    backgroundColor: '#ffffff',
     padding: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#bdc3c7',
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 3,
   },
   highlightedContainer: {
     width: '100%',
     maxHeight: 150,
     backgroundColor: '#fff3cd',
-    padding: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#ffeaa7',
-    marginTop: 20,
+    padding: 20,
   },
   highlightedTitle: {
     fontSize: 16,

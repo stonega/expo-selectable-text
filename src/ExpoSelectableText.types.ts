@@ -17,6 +17,7 @@ export type SelectionEndEventPayload = {
 export type ExpoSelectableTextViewProps = {
   text?: string;
   onSelectionEnd?: (event: { nativeEvent: SelectionEndEventPayload }) => void;
+  onSelecting?: (event: { nativeEvent: SelectionEndEventPayload }) => void;
   fontSize?: number;
   fontFamily?: string;
   // Keeping existing style-related props, assuming they might be used or added later for iOS consistency
