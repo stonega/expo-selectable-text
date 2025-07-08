@@ -78,15 +78,22 @@ export default function App() {
       <View style={styles.container}>
         <Text style={styles.title}>ExpoSelectableText</Text>
         <Text style={styles.platformText}>Running on: {Platform.OS}</Text>
-        <View ref={containerRef} style={{ width: '100%', marginTop: 20 }}>
+        <View ref={containerRef} style={{ width: '100%', marginTop: 20, backgroundColor: "#000" }}>
           <ExpoSelectableTextView
             ref={textViewRef}
             style={styles.selectableTextView}
             onSelectionEnd={handleSelectionEnd}
+            backgroundColor="#D2C1B6"
             onSelecting={() => {
               console.log(Date.now(), "Selecting fired");
               setShowPopup(false);
             }}
+            highlights={[{
+              start: 0,
+              end: 10,
+              backgroundColor: "#FE7743",
+              color: "#ffffff"
+            }]}
             fontSize={20}
             lineHeight={30}
             fontFamily={"Jersey-Regular"}
@@ -162,7 +169,6 @@ const styles = StyleSheet.create({
   },
   selectableTextView: {
     height: 300,
-    padding: 15,
   },
   highlightedContainer: {
     width: '100%',

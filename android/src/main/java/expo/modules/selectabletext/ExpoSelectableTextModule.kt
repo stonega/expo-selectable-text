@@ -13,7 +13,11 @@ class ExpoSelectableTextModule : Module() {
 
     View(ExpoSelectableTextView::class) {
       Prop("text") { view: ExpoSelectableTextView, text: String ->
-        view.textView.text = text.toString()
+        view.setText(text)
+      }
+
+      Prop("highlights") { view: ExpoSelectableTextView, highlights: List<Map<String, Any>> ->
+        view.setHighlights(highlights)
       }
 
       Prop("fontSize") { view: ExpoSelectableTextView, fontSize: Float ->
@@ -30,6 +34,10 @@ class ExpoSelectableTextModule : Module() {
 
       Prop("color") { view: ExpoSelectableTextView, color: String ->
         view.textView.setTextColor(view.parseColor(color))
+      }
+
+      Prop("backgroundColor") { view: ExpoSelectableTextView, backgroundColor: String ->
+        view.textView.setBackgroundColor(view.parseColor(backgroundColor))
       }
 
       Prop("lineHeight") { view: ExpoSelectableTextView, lineHeight: Float ->

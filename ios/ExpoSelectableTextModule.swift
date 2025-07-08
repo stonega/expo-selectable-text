@@ -40,6 +40,11 @@ public class ExpoSelectableTextModule: Module {
         view.setText(text)
       }
 
+      // Defines a setter for the `highlights` prop.
+      Prop("highlights") { (view: ExpoSelectableTextView, highlights: [[String: Any]]?) in
+        view.setHighlights(highlights ?? [])
+      }
+
       // Defines a setter for the `fontSize` prop.
       Prop("fontSize") { (view: ExpoSelectableTextView, fontSize: Double?) in
         let size = CGFloat(fontSize ?? 14.0)
@@ -87,6 +92,13 @@ public class ExpoSelectableTextModule: Module {
       Prop("color") { (view: ExpoSelectableTextView, color: String?) in
         if let color = color {
           view.textView.textColor = view.parseColor(color)
+        }
+      }
+
+      // Defines a setter for the `backgroundColor` prop.
+      Prop("backgroundColor") { (view: ExpoSelectableTextView, backgroundColor: String?) in
+        if let backgroundColor = backgroundColor {
+          view.textView.backgroundColor = view.parseColor(backgroundColor)
         }
       }
 

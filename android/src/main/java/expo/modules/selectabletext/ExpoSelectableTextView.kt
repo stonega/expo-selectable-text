@@ -7,6 +7,10 @@ import android.graphics.Typeface
 import android.os.Handler
 import android.os.Looper
 import android.text.Selection
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.style.BackgroundColorSpan
+import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.view.MotionEvent
 import android.view.ViewGroup
@@ -27,6 +31,10 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
   private var lastSelectionEnd = -1
   private var selectionTimer: Handler? = null
   private val selectionRunnable = Runnable { handleSelectionEnd() }
+  
+  // Store current text and highlights for reapplication
+  private var currentText: String = ""
+  private var currentHighlights: List<Map<String, Any>> = emptyList()
 
   internal val textView = object : TextView(context) {
     
@@ -266,5 +274,69 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
         )
       ))
     }
+  }
+
+  fun setText(text: String) {
+    currentText = text
+    applyTextWithHighlights()
+  }
+
+  fun setHighlights(highlights: List<Map<String, Any>>) {
+    currentHighlights = highlights
+    applyTextWithHighlights()
+  }
+
+  private fun applyTextWithHighlights() {
+    if (currentText.isEmpty()) {
+      textView.text = ""
+      return
+    }
+
+    if (currentHighlights.isEmpty()) {
+      textView.text = currentText
+      return
+    }
+
+    val spannable = SpannableString(currentText)
+    
+    for (highlight in currentHighlights) {
+      val start = (highlight["start"] as? Double)?.toInt() ?: continue
+      val end = (highlight["end"] as? Double)?.toInt() ?: continue
+      
+      // Ensure valid range
+      if (start < 0 || end > currentText.length || start >= end) continue
+      
+      // Apply background color if specified
+      (highlight["backgroundColor"] as? String)?.let { bgColor ->
+        try {
+          val backgroundColor = parseColor(bgColor)
+          spannable.setSpan(
+            BackgroundColorSpan(backgroundColor),
+            start,
+            end,
+            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+          )
+        } catch (e: Exception) {
+          Log.e("ExpoSelectableTextView", "Invalid backgroundColor: $bgColor")
+        }
+      }
+      
+      // Apply text color if specified
+      (highlight["color"] as? String)?.let { textColor ->
+        try {
+          val foregroundColor = parseColor(textColor)
+          spannable.setSpan(
+            ForegroundColorSpan(foregroundColor),
+            start,
+            end,
+            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+          )
+        } catch (e: Exception) {
+          Log.e("ExpoSelectableTextView", "Invalid color: $textColor")
+        }
+      }
+    }
+    
+    textView.text = spannable
   }
 }

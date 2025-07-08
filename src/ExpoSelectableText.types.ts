@@ -14,16 +14,24 @@ export type SelectionEndEventPayload = {
   };
 };
 
+export type TextHighlight = {
+  start: number;
+  end: number;
+  backgroundColor?: string;
+  color?: string;
+};
+
 export type ExpoSelectableTextViewProps = {
   text?: string;
   onSelectionEnd?: (event: { nativeEvent: SelectionEndEventPayload }) => void;
   onSelecting?: (event: { nativeEvent: SelectionEndEventPayload }) => void;
   fontSize?: number;
   fontFamily?: string;
-  // Keeping existing style-related props, assuming they might be used or added later for iOS consistency
   color?: string;
+  backgroundColor?: string;
   selectionColor?: string; // This might need native implementation for iOS if different from default
   lineHeight?: number;
+  highlights?: TextHighlight[];
   style?: StyleProp<ViewStyle>;
 };
 

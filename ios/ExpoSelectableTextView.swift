@@ -24,6 +24,10 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
   private var selectionMonitorTimer: Timer?
   var pendingLineHeight: CGFloat?
   
+  // Store current text and highlights for reapplication
+  private var currentText: String = ""
+  private var currentHighlights: [[String: Any]] = []
+  
   // Add these variables for change detection
   private var lastSelectionStart: Int = -1
   private var lastSelectionEnd: Int = -1
@@ -102,7 +106,7 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
     selectionMonitorTimer = nil
     
     // Start the end timer with a longer delay
-    selectionEndTimer = Timer.scheduledTimer(withTimeInterval: .3, repeats: false) { [weak self] _ in
+    selectionEndTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { [weak self] _ in
       self?.handleSelectionEnd()
     }
   }
@@ -123,6 +127,14 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
     }
   }
   
+  private func getAdjustedSelectionRect(for textRange: UITextRange) -> CGRect {
+    let selectionRect = textView.firstRect(for: textRange)
+    
+    // Convert to the parent view's coordinate system
+    // The convert method properly handles coordinate system conversion including scroll offset
+    return textView.convert(selectionRect, to: self)
+  }
+  
   private func fireOnSelectingEvent() {
     let selectedRange = textView.selectedRange
     
@@ -136,7 +148,7 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
     if let startPosition = textView.position(from: textView.beginningOfDocument, offset: selectedRange.location),
        let endPosition = textView.position(from: textView.beginningOfDocument, offset: selectedRange.location + selectedRange.length),
        let textRange = textView.textRange(from: startPosition, to: endPosition) {
-      selectionRect = textView.firstRect(for: textRange)
+      selectionRect = getAdjustedSelectionRect(for: textRange)
     }
     
     onSelecting([
@@ -158,13 +170,23 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
   }
 
   func setText(_ text: String?) {
-    guard let text = text else {
+    currentText = text ?? ""
+    applyTextWithHighlights()
+  }
+
+  func setHighlights(_ highlights: [[String: Any]]) {
+    currentHighlights = highlights
+    applyTextWithHighlights()
+  }
+
+  private func applyTextWithHighlights() {
+    guard !currentText.isEmpty else {
       textView.attributedText = nil
       return
     }
 
-    let attributedString = NSMutableAttributedString(string: text)
-    let range = NSRange(location: 0, length: text.count)
+    let attributedString = NSMutableAttributedString(string: currentText)
+    let range = NSRange(location: 0, length: currentText.count)
 
     // Preserve existing font
     if let font = textView.font {
@@ -182,6 +204,29 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
       paragraphStyle.minimumLineHeight = pendingLineHeight
       paragraphStyle.maximumLineHeight = pendingLineHeight
       attributedString.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
+    }
+
+    // Apply highlights
+    for highlight in currentHighlights {
+      guard let start = highlight["start"] as? Int,
+            let end = highlight["end"] as? Int,
+            start >= 0, end <= currentText.count, start < end else {
+        continue
+      }
+
+      let highlightRange = NSRange(location: start, length: end - start)
+
+      // Apply background color if specified
+      if let backgroundColor = highlight["backgroundColor"] as? String {
+        let bgColor = parseColor(backgroundColor)
+        attributedString.addAttribute(.backgroundColor, value: bgColor, range: highlightRange)
+      }
+
+      // Apply text color if specified
+      if let textColor = highlight["color"] as? String {
+        let fgColor = parseColor(textColor)
+        attributedString.addAttribute(.foregroundColor, value: fgColor, range: highlightRange)
+      }
     }
 
     textView.attributedText = attributedString
@@ -284,7 +329,7 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
       if let startPosition = textView.position(from: textView.beginningOfDocument, offset: selectedRange.location),
          let endPosition = textView.position(from: textView.beginningOfDocument, offset: selectedRange.location + selectedRange.length),
          let textRange = textView.textRange(from: startPosition, to: endPosition) {
-        selectionRect = textView.firstRect(for: textRange)
+        selectionRect = getAdjustedSelectionRect(for: textRange)
       }
       
       onSelectionEnd([
