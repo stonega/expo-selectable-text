@@ -16,7 +16,7 @@ public class ExpoSelectableTextModule: Module {
     ])
 
     // Defines event names that the module can send to JavaScript.
-    Events("onChange")
+    Events("onChange", "onSelectionEnd", "onSelecting")
 
     // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
     Function("hello") {
@@ -35,14 +35,74 @@ public class ExpoSelectableTextModule: Module {
     // Enables the module to be used as a native view. Definition components that are accepted as part of the
     // view definition: Prop, Events.
     View(ExpoSelectableTextView.self) {
-      // Defines a setter for the `url` prop.
-      Prop("url") { (view: ExpoSelectableTextView, url: URL) in
-        if view.webView.url != url {
-          view.webView.load(URLRequest(url: url))
+      // Defines a setter for the `text` prop.
+      Prop("text") { (view: ExpoSelectableTextView, text: String?) in
+        view.setText(text)
+      }
+
+      // Defines a setter for the `fontSize` prop.
+      Prop("fontSize") { (view: ExpoSelectableTextView, fontSize: Double?) in
+        let size = CGFloat(fontSize ?? 14.0)
+        // Use existing font family/weight if available, otherwise use system font
+        if let currentFont = view.textView.font {
+          view.textView.font = currentFont.withSize(size)
+        } else {
+          view.textView.font = UIFont.systemFont(ofSize: size)
         }
       }
 
-      Events("onLoad")
+      // Defines a setter for the `fontFamily` prop.
+      Prop("fontFamily") { (view: ExpoSelectableTextView, fontFamily: String?) in
+        if let fontFamily = fontFamily, let font = UIFont(name: fontFamily, size: view.textView.font?.pointSize ?? 14.0) {
+          view.textView.font = font
+        }
+      }
+
+      // Defines a setter for the `lineHeight` prop.
+      Prop("lineHeight") { (view: ExpoSelectableTextView, lineHeight: Double?) in
+        guard let lineHeight = lineHeight else { return }
+        
+        let currentFont = view.textView.font ?? UIFont.systemFont(ofSize: 14.0)
+        let fontLineHeight = currentFont.lineHeight
+        let desiredLineHeight = CGFloat(lineHeight)
+        
+        // Create paragraph style with line height
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.minimumLineHeight = desiredLineHeight
+        paragraphStyle.maximumLineHeight = desiredLineHeight
+        
+        // Apply to existing text if available
+        if let text = view.textView.text, !text.isEmpty {
+          let attributedText = NSMutableAttributedString(string: text)
+          attributedText.addAttribute(.font, value: currentFont, range: NSRange(location: 0, length: text.count))
+          attributedText.addAttribute(.paragraphStyle, value: paragraphStyle, range: NSRange(location: 0, length: text.count))
+          view.textView.attributedText = attributedText
+        } else {
+          // Store for future text updates
+          view.pendingLineHeight = desiredLineHeight
+        }
+      }
+
+      // Defines a setter for the `color` prop.
+      Prop("color") { (view: ExpoSelectableTextView, color: String?) in
+        if let color = color {
+          view.textView.textColor = view.parseColor(color)
+        }
+      }
+
+      // Defines a setter for the `selectionColor` prop.
+      Prop("selectionColor") { (view: ExpoSelectableTextView, selectionColor: String?) in
+        if let selectionColor = selectionColor {
+          view.textView.tintColor = view.parseColor(selectionColor)
+        }
+      }
+
+      Events("onSelectionEnd", "onSelecting")
+
+      // Add View Command for clearing selection
+      AsyncFunction("clearSelection") { (view: ExpoSelectableTextView) in
+        view.clearSelection()
+      }
     }
   }
 }

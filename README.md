@@ -1,35 +1,39 @@
 
 # Expo Selectable Text
 
-ExpoSelectableText is a custom React Native component that provides text selection functionality.
-
-> ⚠️ Note: This component is currently supported only on Android.
-
-For iOS, similar functionality can be achieved using a TextInput component combined with the `onSelectionChange` and `onTouchEnd` props. However, a dedicated iOS implementation written in Swift is part of the planned future development.
+ExpoSelectableText is a custom React Native component that provides text selection functionality for both Android and iOS.
 
 # Installating the library
   
 ```
-npm install expo-selectable-text
+npm install @stonega/expo-selectable-text
 ```
     
 
-#### Android
+#### Android and iOS
 
-<img src="https://github.com/user-attachments/assets/c81c0621-dbea-4fd5-ae06-e35d4df76830" alt="Android Screenshot" style="width: 400px; height: auto;" />
-
+<img src="./screenshots/screenshot.png" alt="Android Screenshot" style="width: 400px; height: auto;" />
+<!-- TODO: Add iOS screenshot -->
 
 #### Examples
 
 ```tsx
 import { ExpoSelectableTextView } from "expo-selectable-text";
+import { Platform } from 'react-native';
 
-<ExpoSelectableTextView
-        style={{ flex:1 }}
-        onSelectionEnd={(event) => alert(JSON.stringify(event.nativeEvent))}
-        fontSize={18}
-        text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa."
-/>
+  <ExpoSelectableTextView
+    ref={textViewRef}
+    style={styles.selectableTextView}
+    onSelectionEnd={handleSelectionEnd}
+    onSelecting={() => {
+      console.log(Date.now(), "Selecting fired");
+      setShowPopup(false);
+    }}
+    fontSize={20}
+    lineHeight={30}
+    fontFamily={"Jersey-Regular"}
+    text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa. Vestibulum lacinia arcu eget nulla. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Curabitur sodales ligula in libero. Sed dignissim lacinia nunc. Proin ut ligula vel nunc egestas porttitor. Morbi lectus risus, iaculis vel, suscipit quis, luctus non, massa. Fusce ac turpis quis ligula lacinia aliquet. Mauris ipsum. Nulla metus metus, ullamcorper vel, tincidunt sed, euismod in, nibh."
+  />
 ```
 
 Using FlatList:
