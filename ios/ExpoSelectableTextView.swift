@@ -3,9 +3,6 @@ import UIKit
 
 // Custom UITextView that disables system menu
 class CustomTextView: UITextView {
-  weak var parentView: ExpoSelectableTextView?
-  private var touchDownLocation: CGPoint?
-  
   override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
     // Disable all system menu actions
     return false
@@ -15,38 +12,6 @@ class CustomTextView: UITextView {
     // Don't return any target for system actions
     return nil
   }
-  
-  override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-    super.touchesBegan(touches, with: event)
-    if let touch = touches.first {
-      touchDownLocation = touch.location(in: self)
-    }
-  }
-  
-  override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-    super.touchesEnded(touches, with: event)
-    
-    // Check if this was a tap (not a drag/selection gesture)
-    if let touch = touches.first,
-       let downLocation = touchDownLocation {
-      let endLocation = touch.location(in: self)
-      let distance = sqrt(pow(endLocation.x - downLocation.x, 2) + pow(endLocation.y - downLocation.y, 2))
-      
-      // If it's a tap (small movement) and we have a selection, clear it
-      if distance < 10 && selectedRange.length > 0 {
-        // Use a longer delay to ensure system selection gestures complete
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-          guard let self = self else { return }
-          // Double-check we still have a selection and it wasn't just created
-          if self.selectedRange.length > 0 {
-            self.parentView?.clearSelection()
-          }
-        }
-      }
-    }
-    
-    touchDownLocation = nil
-  }
 }
 
 class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
@@ -55,8 +20,15 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
   let onSelecting = EventDispatcher()
 
   var selectedText: String = ""
-  private var selectionTimer: Timer?
+  private var selectionEndTimer: Timer?
+  private var selectionMonitorTimer: Timer?
   var pendingLineHeight: CGFloat?
+  
+  // Add these variables for change detection
+  private var lastSelectionStart: Int = -1
+  private var lastSelectionEnd: Int = -1
+  private var hasActiveSelection: Bool = false
+  private var isMonitoringSelection: Bool = false
 
   required init(appContext: AppContext? = nil) {
     super.init(appContext: appContext)
@@ -64,26 +36,209 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
     textView.isEditable = false
     textView.isSelectable = true
     textView.delegate = self
-    textView.parentView = self  // Set parent reference
     addSubview(textView)
+    
+    // Add gesture recognizer to detect when selection gestures begin
+    setupSelectionMonitoring()
+  }
+  
+  private func setupSelectionMonitoring() {
+    // Add a gesture recognizer that can detect when text selection gestures are happening
+    let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
+    longPressGesture.minimumPressDuration = 0.1
+    longPressGesture.delegate = self
+    textView.addGestureRecognizer(longPressGesture)
+    
+    let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+    panGesture.delegate = self
+    textView.addGestureRecognizer(panGesture)
+  }
+  
+  @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+    switch gesture.state {
+    case .began:
+      startSelectionMonitoring()
+    case .ended, .cancelled, .failed:
+      stopSelectionMonitoring()
+    default:
+      break
+    }
+  }
+  
+  @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
+    switch gesture.state {
+    case .began:
+      startSelectionMonitoring()
+    case .changed:
+      // Continue monitoring during pan
+      break
+    case .ended, .cancelled, .failed:
+      stopSelectionMonitoring()
+    default:
+      break
+    }
+  }
+  
+  private func startSelectionMonitoring() {
+    guard !isMonitoringSelection else { return }
+    isMonitoringSelection = true
+    
+    // Cancel any existing end timer
+    selectionEndTimer?.invalidate()
+    selectionEndTimer = nil
+    
+    // Start monitoring selection changes at high frequency
+    selectionMonitorTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+      self?.checkSelectionChange()
+    }
+  }
+  
+  private func stopSelectionMonitoring() {
+    guard isMonitoringSelection else { return }
+    isMonitoringSelection = false
+    
+    // Stop the monitoring timer
+    selectionMonitorTimer?.invalidate()
+    selectionMonitorTimer = nil
+    
+    // Start the end timer with a longer delay
+    selectionEndTimer = Timer.scheduledTimer(withTimeInterval: .3, repeats: false) { [weak self] _ in
+      self?.handleSelectionEnd()
+    }
+  }
+  
+  private func checkSelectionChange() {
+    let selectedRange = textView.selectedRange
+    let currentStart = selectedRange.location
+    let currentEnd = selectedRange.location + selectedRange.length
+    
+    // Check if selection has changed
+    if currentStart != lastSelectionStart || currentEnd != lastSelectionEnd {
+      lastSelectionStart = currentStart
+      lastSelectionEnd = currentEnd
+      
+      if selectedRange.length > 0 {
+        fireOnSelectingEvent()
+      }
+    }
+  }
+  
+  private func fireOnSelectingEvent() {
+    let selectedRange = textView.selectedRange
+    
+    guard selectedRange.length > 0 else { return }
+    
+    let newSelectedText = (textView.text as NSString).substring(with: selectedRange)
+    self.selectedText = newSelectedText
+    hasActiveSelection = true
+    
+    var selectionRect = CGRect.zero
+    if let startPosition = textView.position(from: textView.beginningOfDocument, offset: selectedRange.location),
+       let endPosition = textView.position(from: textView.beginningOfDocument, offset: selectedRange.location + selectedRange.length),
+       let textRange = textView.textRange(from: startPosition, to: endPosition) {
+      selectionRect = textView.firstRect(for: textRange)
+    }
+    
+    onSelecting([
+      "text": newSelectedText,
+      "start": selectedRange.location,
+      "end": selectedRange.location + selectedRange.length,
+      "length": selectedRange.length,
+      "rect": [
+        "x": selectionRect.origin.x,
+        "y": selectionRect.origin.y,
+        "width": selectionRect.size.width,
+        "height": selectionRect.size.height
+      ]
+    ])
   }
 
   override func layoutSubviews() {
     textView.frame = bounds
   }
 
+  func setText(_ text: String?) {
+    guard let text = text else {
+      textView.attributedText = nil
+      return
+    }
+
+    let attributedString = NSMutableAttributedString(string: text)
+    let range = NSRange(location: 0, length: text.count)
+
+    // Preserve existing font
+    if let font = textView.font {
+      attributedString.addAttribute(.font, value: font, range: range)
+    }
+
+    // Preserve existing text color
+    if let color = textView.textColor {
+      attributedString.addAttribute(.foregroundColor, value: color, range: range)
+    }
+
+    // Apply pending line height if it was set before the text
+    if let pendingLineHeight = pendingLineHeight {
+      let paragraphStyle = NSMutableParagraphStyle()
+      paragraphStyle.minimumLineHeight = pendingLineHeight
+      paragraphStyle.maximumLineHeight = pendingLineHeight
+      attributedString.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
+    }
+
+    textView.attributedText = attributedString
+  }
+
+  func parseColor(_ colorString: String) -> UIColor {
+    var str = colorString.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+
+    if str.hasPrefix("#") {
+      str.remove(at: str.startIndex)
+    }
+
+    if str.count != 6 {
+      return .black
+    }
+
+    var rgbValue: UInt64 = 0
+    Scanner(string: str).scanHexInt64(&rgbValue)
+
+    return UIColor(
+      red: CGFloat((rgbValue & 0xFF0000) >> 16) / 255.0,
+      green: CGFloat((rgbValue & 0x00FF00) >> 8) / 255.0,
+      blue: CGFloat(rgbValue & 0x0000FF) / 255.0,
+      alpha: 1.0
+    )
+  }
+
   func textViewDidChangeSelection(_ textView: UITextView) {
-    // Cancel any existing timer
-    selectionTimer?.invalidate()
-    selectionTimer = nil
+    // If we're actively monitoring selection, let that handle the events
+    if isMonitoringSelection {
+      return
+    }
     
     let selectedRange = textView.selectedRange
-    
+    let currentStart = selectedRange.location
+    let currentEnd = selectedRange.location + selectedRange.length
+
+    // Check if selection has actually changed
+    if currentStart == lastSelectionStart && currentEnd == lastSelectionEnd {
+      return
+    }
+
+    // Always cancel any existing end timer when selection changes
+    selectionEndTimer?.invalidate()
+    selectionEndTimer = nil
+
+    // Update last selection values
+    lastSelectionStart = currentStart
+    lastSelectionEnd = currentEnd
+
     if selectedRange.length == 0 {
       // Selection was cleared
-      if !selectedText.isEmpty {
+      if hasActiveSelection {
+        hasActiveSelection = false
         selectedText = ""
-        // Notify that selection was cleared
+        
+        // Immediately fire onSelectionEnd for cleared selection
         onSelectionEnd([
           "text": "",
           "start": 0,
@@ -100,41 +255,24 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
       }
       return
     }
-    
-    let newSelectedText = (textView.text as NSString).substring(with: selectedRange)
-    self.selectedText = newSelectedText
-    
-    // Fire onSelecting event for real-time updates
-    var selectionRect = CGRect.zero
-    if let startPosition = textView.position(from: textView.beginningOfDocument, offset: selectedRange.location),
-       let endPosition = textView.position(from: textView.beginningOfDocument, offset: selectedRange.location + selectedRange.length),
-       let textRange = textView.textRange(from: startPosition, to: endPosition) {
-      selectionRect = textView.firstRect(for: textRange)
-    }
-    onSelecting([
-      "text": newSelectedText,
-      "start": selectedRange.location,
-      "end": selectedRange.location + selectedRange.length,
-      "length": selectedRange.length,
-      "rect": [
-        "x": selectionRect.origin.x,
-        "y": selectionRect.origin.y,
-        "width": selectionRect.size.width,
-        "height": selectionRect.size.height
-      ]
-    ])
-    
-    // Start a timer to detect when selection has stopped
-    // Use a longer delay to ensure selection is stable
-    selectionTimer = Timer.scheduledTimer(withTimeInterval: 0.7, repeats: false) { [weak self] _ in
+
+    // Fire onSelecting for this selection change
+    fireOnSelectingEvent()
+
+    // Schedule onSelectionEnd
+    selectionEndTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
       self?.handleSelectionEnd()
     }
   }
 
   private func handleSelectionEnd() {
+    // Clear the timer reference
+    selectionEndTimer = nil
+    
     let selectedRange = textView.selectedRange
     
-    if selectedRange.length == 0 {
+    // Double-check that we still have a selection
+    if selectedRange.length == 0 || !hasActiveSelection {
       return
     }
     
@@ -164,46 +302,22 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
     }
   }
 
-  // Helper method to parse color from string
-  func parseColor(_ colorString: String) -> UIColor {
-    var hexString = colorString.trimmingCharacters(in: .whitespacesAndNewlines)
+  // Simple tap-to-clear using a single tap gesture
+  override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+    super.touchesEnded(touches, with: event)
     
-    // Remove # if present
-    if hexString.hasPrefix("#") {
-      hexString.removeFirst()
-    }
+    guard let _ = touches.first else { return }
     
-    // Convert to UInt64
-    var rgbValue: UInt64 = 0
-    Scanner(string: hexString).scanHexInt64(&rgbValue)
-    
-    let red = CGFloat((rgbValue & 0xFF0000) >> 16) / 255.0
-    let green = CGFloat((rgbValue & 0x00FF00) >> 8) / 255.0
-    let blue = CGFloat(rgbValue & 0x0000FF) / 255.0
-    
-    return UIColor(red: red, green: green, blue: blue, alpha: 1.0)
-  }
-
-  // Override text setter to apply line height if pending
-  func setText(_ text: String?) {
-    guard let text = text else { 
-      textView.text = nil
-      return 
-    }
-    
-    if let pendingLineHeight = pendingLineHeight {
-      // Apply line height to new text
-      let currentFont = textView.font ?? UIFont.systemFont(ofSize: 14.0)
-      let paragraphStyle = NSMutableParagraphStyle()
-      paragraphStyle.minimumLineHeight = pendingLineHeight
-      paragraphStyle.maximumLineHeight = pendingLineHeight
-      
-      let attributedText = NSMutableAttributedString(string: text)
-      attributedText.addAttribute(.font, value: currentFont, range: NSRange(location: 0, length: text.count))
-      attributedText.addAttribute(.paragraphStyle, value: paragraphStyle, range: NSRange(location: 0, length: text.count))
-      textView.attributedText = attributedText
-    } else {
-      textView.text = text
+    // Only clear selection if there's a selection and it's a simple tap
+    if textView.selectedRange.length > 0 {
+      // Small delay to avoid interfering with selection gestures
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+        guard let self = self else { return }
+        // Check if we still have a selection (not cleared by another gesture)
+        if self.textView.selectedRange.length > 0 {
+          self.clearSelection()
+        }
+      }
     }
   }
 
@@ -213,14 +327,17 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
       // Clear all menu items
       UIMenuController.shared.menuItems = []
     } else {
-      // Clean up timer when view is removed
-      selectionTimer?.invalidate()
-      selectionTimer = nil
+      // Clean up timers when view is removed
+      selectionEndTimer?.invalidate()
+      selectionEndTimer = nil
+      selectionMonitorTimer?.invalidate()
+      selectionMonitorTimer = nil
     }
   }
   
   deinit {
-    selectionTimer?.invalidate()
+    selectionEndTimer?.invalidate()
+    selectionMonitorTimer?.invalidate()
   }
 
   func clearSelection() {
@@ -228,12 +345,21 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
     let selectedRange = textView.selectedRange
     let wasSelected = selectedRange.length > 0
     
-    // Cancel any pending selection timer
-    selectionTimer?.invalidate()
+    // Cancel any pending timers
+    selectionEndTimer?.invalidate()
+    selectionEndTimer = nil
+    selectionMonitorTimer?.invalidate()
+    selectionMonitorTimer = nil
+    isMonitoringSelection = false
     
     // Clear the selection
     textView.selectedRange = NSRange(location: 0, length: 0)
     selectedText = ""
+    hasActiveSelection = false
+    
+    // Reset last selection values
+    lastSelectionStart = -1
+    lastSelectionEnd = -1
     
     // Fire onSelectionEnd event to notify that selection was cleared
     if wasSelected {
@@ -251,5 +377,12 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
         ]
       ])
     }
+  }
+}
+
+// MARK: - UIGestureRecognizerDelegate
+extension ExpoSelectableTextView: UIGestureRecognizerDelegate {
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+    return true
   }
 }

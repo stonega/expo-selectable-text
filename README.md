@@ -6,13 +6,13 @@ ExpoSelectableText is a custom React Native component that provides text selecti
 # Installating the library
   
 ```
-npm install expo-selectable-text
+npm install @stonega/expo-selectable-text
 ```
     
 
 #### Android and iOS
 
-<img src="https://github.com/user-attachments/assets/c81c0621-dbea-4fd5-ae06-e35d4df76830" alt="Android Screenshot" style="width: 400px; height: auto;" />
+<img src="./screenshots/screenshot.png" alt="Android Screenshot" style="width: 400px; height: auto;" />
 <!-- TODO: Add iOS screenshot -->
 
 #### Examples
@@ -21,16 +21,19 @@ npm install expo-selectable-text
 import { ExpoSelectableTextView } from "expo-selectable-text";
 import { Platform } from 'react-native';
 
-<ExpoSelectableTextView
-        style={{ flex:1, padding: 10, margin: 10, backgroundColor: 'white', borderRadius: 5 }} // Added some basic styling
-        onSelectionEnd={(event) => {
-          // The event contains { text, start, end }
-          alert(`Selected: "${event.text}" from ${event.start} to ${event.end}`);
-        }}
-        fontSize={18}
-        fontFamily={Platform.OS === 'ios' ? 'Avenir-Medium' : 'sans-serif'} // Example platform-specific font
-        text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa."
-/>
+  <ExpoSelectableTextView
+    ref={textViewRef}
+    style={styles.selectableTextView}
+    onSelectionEnd={handleSelectionEnd}
+    onSelecting={() => {
+      console.log(Date.now(), "Selecting fired");
+      setShowPopup(false);
+    }}
+    fontSize={20}
+    lineHeight={30}
+    fontFamily={"Jersey-Regular"}
+    text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa. Vestibulum lacinia arcu eget nulla. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Curabitur sodales ligula in libero. Sed dignissim lacinia nunc. Proin ut ligula vel nunc egestas porttitor. Morbi lectus risus, iaculis vel, suscipit quis, luctus non, massa. Fusce ac turpis quis ligula lacinia aliquet. Mauris ipsum. Nulla metus metus, ullamcorper vel, tincidunt sed, euismod in, nibh."
+  />
 ```
 
 Using FlatList:

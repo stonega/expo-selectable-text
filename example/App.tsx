@@ -32,8 +32,7 @@ export default function App() {
 
   const handleSelectionEnd = (event: any) => {
     const { rect, text, cleared } = event.nativeEvent;
-    console.log("Text:", text);
-    console.log("Cleared:", cleared);
+    console.log(Date.now(), "onSelectionEnd fired");
     if(text.trim().length === 0 || cleared) {
       setShowPopup(false);
       return;
@@ -48,10 +47,6 @@ export default function App() {
           const screenWidth = Dimensions.get('window').width;
           const popupWidth = 150;
           const popupHeight = 50;
-          console.log("x:", x);
-          console.log("y:", y);
-          console.log("rect.x:", rect.x);
-          console.log("rect.y:", rect.y);
           let popupX = x + rect.x + 5;
           let popupY = y + rect.y - popupHeight - 5;
           // Adjust if popup goes off screen
@@ -89,7 +84,7 @@ export default function App() {
             style={styles.selectableTextView}
             onSelectionEnd={handleSelectionEnd}
             onSelecting={() => {
-              console.log("Selecting fired");
+              console.log(Date.now(), "Selecting fired");
               setShowPopup(false);
             }}
             fontSize={20}
