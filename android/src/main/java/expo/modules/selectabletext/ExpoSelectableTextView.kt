@@ -41,7 +41,7 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
   private var currentHighlights: List<Map<String, Any>> = emptyList()
 
   internal val textView = object : TextView(context) {
-    
+
     override fun onSelectionChanged(selStart: Int, selEnd: Int) {
       super.onSelectionChanged(selStart, selEnd)
       
@@ -110,7 +110,7 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
     setTextIsSelectable(true)
     customSelectionActionModeCallback = createCustomSelectionActionModeCallback()
     // Important for spans to be clickable
-    movementMethod = LinkMovementMethod.getInstance()
+    // movementMethod = LinkMovementMethod.getInstance()
     // Remove the underline and default color of clickable spans
     highlightColor = Color.TRANSPARENT
   }

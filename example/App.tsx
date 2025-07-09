@@ -89,7 +89,7 @@ export default function App() {
       if (startIndex !== -1) {
         const endIndex = startIndex + selectedText.length;
         const newHighlight: Highlight = {
-          id: crypto.randomUUID(),
+          id: Math.random().toString(36).substring(2, 15),
           start: startIndex,
           end: endIndex,
           backgroundColor: "#F9F362",
@@ -115,8 +115,10 @@ export default function App() {
             ref={textViewRef}
             style={styles.selectableTextView}
             color="#000000"
+            selectionColor="#a0a0a0"
             onSelectionEnd={handleSelectionEnd}
             backgroundColor="#D2C1B6"
+            // onHighlightClicked={handleSelectionEnd}
             onSelecting={() => {
               console.log(Date.now(), "Selecting fired");
               setShowPopup(false);
@@ -124,7 +126,6 @@ export default function App() {
             highlights={highlights}
             fontSize={20}
             lineHeight={30}
-            fontFamily={"Jersey-Regular"}
             text={LOREM_IPSUM}
           />
         </View>
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
   selectableTextView: {
-    height: 300,
+    height: 500,
   },
   highlightedContainer: {
     width: '100%',
