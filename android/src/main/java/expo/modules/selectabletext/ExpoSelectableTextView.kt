@@ -42,6 +42,12 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
 
   internal val textView = object : TextView(context) {
 
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+      // This is the key change to allow text selection within a ScrollView
+      parent.requestDisallowInterceptTouchEvent(true)
+      return super.onTouchEvent(event)
+    }
+    
     override fun onSelectionChanged(selStart: Int, selEnd: Int) {
       super.onSelectionChanged(selStart, selEnd)
       
