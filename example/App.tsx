@@ -3,11 +3,29 @@ import { ExpoSelectableTextView, type ExpoSelectableTextViewRef } from "expo-sel
 import { SafeAreaView, Text, StyleSheet, Platform, View, TouchableOpacity, Dimensions } from "react-native";
 import { useState, useRef } from "react";
 
+const LOREM_IPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa. Vestibulum lacinia arcu eget nulla. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Curabitur sodales ligula in libero. Sed dignissim lacinia nunc. Proin ut ligula vel nunc egestas porttitor. Morbi lectus risus, iaculis vel, suscipit quis, luctus non, massa. Fusce ac turpis quis ligula lacinia aliquet. Mauris ipsum. Nulla metus metus, ullamcorper vel, tincidunt sed, euismod in, nibh.";
+
+type Highlight = {
+  id: string;
+  start: number;
+  end: number;
+  backgroundColor: string;
+  color: string;
+};
+
 export default function App() {
   const [selectedText, setSelectedText] = useState("");
   const [showPopup, setShowPopup] = useState(false);
   const [selectionRect, setSelectionRect] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const [highlightedTexts, setHighlightedTexts] = useState<string[]>([]);
+  const [highlights, setHighlights] = useState<Highlight[]>([
+    {
+      id: "1",
+      start: 0,
+      end: 10,
+      backgroundColor: "#FE7743",
+      color: "#ffffff",
+    },
+  ]);
   const [popupPosition, setPopupPosition] = useState({ x: 50, y: 50 });
   const textViewRef = useRef<ExpoSelectableTextViewRef>(null);
   const containerRef = useRef<View>(null);
@@ -66,8 +84,22 @@ export default function App() {
   };
 
   const handleHighlight = async () => {
-    if (selectedText && !highlightedTexts.includes(selectedText)) {
-      setHighlightedTexts([...highlightedTexts, selectedText]);
+    if (selectedText) {
+      const startIndex = LOREM_IPSUM.indexOf(selectedText);
+      if (startIndex !== -1) {
+        const endIndex = startIndex + selectedText.length;
+        const newHighlight: Highlight = {
+          id: crypto.randomUUID(),
+          start: startIndex,
+          end: endIndex,
+          backgroundColor: "#F9F362",
+          color: "#000000",
+        };
+        // Avoid adding duplicate highlights for the same range
+        if (!highlights.some(h => h.start === newHighlight.start && h.end === newHighlight.end)) {
+          setHighlights(prev => [...prev, newHighlight]);
+        }
+      }
     }
     await textViewRef.current?.clearSelection();
     setShowPopup(false);
@@ -82,34 +114,20 @@ export default function App() {
           <ExpoSelectableTextView
             ref={textViewRef}
             style={styles.selectableTextView}
+            color="#000000"
             onSelectionEnd={handleSelectionEnd}
             backgroundColor="#D2C1B6"
             onSelecting={() => {
               console.log(Date.now(), "Selecting fired");
               setShowPopup(false);
             }}
-            highlights={[{
-              start: 0,
-              end: 10,
-              backgroundColor: "#FE7743",
-              color: "#ffffff"
-            }]}
+            highlights={highlights}
             fontSize={20}
             lineHeight={30}
             fontFamily={"Jersey-Regular"}
-            text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa. Vestibulum lacinia arcu eget nulla. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Curabitur sodales ligula in libero. Sed dignissim lacinia nunc. Proin ut ligula vel nunc egestas porttitor. Morbi lectus risus, iaculis vel, suscipit quis, luctus non, massa. Fusce ac turpis quis ligula lacinia aliquet. Mauris ipsum. Nulla metus metus, ullamcorper vel, tincidunt sed, euismod in, nibh."
+            text={LOREM_IPSUM}
           />
         </View>
-        {highlightedTexts.length > 0 && (
-          <View style={styles.highlightedContainer}>
-            <Text style={styles.highlightedTitle}>Highlighted Texts:</Text>
-            {highlightedTexts.map((text, index) => (
-              <Text key={index} style={styles.highlightedText}>
-                • {text}
-              </Text>
-            ))}
-          </View>
-        )}
       </View>
 
       {/* Popup Menu - Absolute positioned */}

@@ -9,10 +9,14 @@ import android.os.Looper
 import android.text.Selection
 import android.text.Spannable
 import android.text.SpannableString
+import android.text.TextPaint
+import android.text.method.LinkMovementMethod
 import android.text.style.BackgroundColorSpan
+import android.text.style.ClickableSpan
 import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import expo.modules.kotlin.AppContext
@@ -24,7 +28,7 @@ import kotlin.math.sqrt
 class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoView(context, appContext) {
   private val onSelectionEnd by EventDispatcher()
   private val onSelecting by EventDispatcher()
-  private val onHighlight by EventDispatcher()
+  private val onHighlightClicked by EventDispatcher()
 
   private var selectedText: String = ""
   private var lastSelectionStart = -1
@@ -105,6 +109,10 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
     layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
     setTextIsSelectable(true)
     customSelectionActionModeCallback = createCustomSelectionActionModeCallback()
+    // Important for spans to be clickable
+    movementMethod = LinkMovementMethod.getInstance()
+    // Remove the underline and default color of clickable spans
+    highlightColor = Color.TRANSPARENT
   }
 
   init {
@@ -278,65 +286,55 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
 
   fun setText(text: String) {
     currentText = text
-    applyTextWithHighlights()
+    // We need to use setText with a buffer type that supports spans
+    textView.setText(currentText, TextView.BufferType.SPANNABLE)
+    applyHighlights()
   }
 
   fun setHighlights(highlights: List<Map<String, Any>>) {
     currentHighlights = highlights
-    applyTextWithHighlights()
+    // If text is already set, apply highlights
+    if (textView.text.isNotEmpty()) {
+      applyHighlights()
+    }
   }
 
-  private fun applyTextWithHighlights() {
-    if (currentText.isEmpty()) {
-      textView.text = ""
-      return
+  private fun applyHighlights() {
+    val spannable = textView.text as Spannable
+    // Remove old spans before adding new ones
+    val oldSpans = spannable.getSpans(0, spannable.length, Any::class.java)
+    for (span in oldSpans) {
+      if (span is ClickableSpan || span is BackgroundColorSpan || span is ForegroundColorSpan) {
+        spannable.removeSpan(span)
+      }
     }
 
-    if (currentHighlights.isEmpty()) {
-      textView.text = currentText
-      return
-    }
-
-    val spannable = SpannableString(currentText)
-    
     for (highlight in currentHighlights) {
-      val start = (highlight["start"] as? Double)?.toInt() ?: continue
-      val end = (highlight["end"] as? Double)?.toInt() ?: continue
-      
-      // Ensure valid range
-      if (start < 0 || end > currentText.length || start >= end) continue
-      
-      // Apply background color if specified
-      (highlight["backgroundColor"] as? String)?.let { bgColor ->
-        try {
-          val backgroundColor = parseColor(bgColor)
-          spannable.setSpan(
-            BackgroundColorSpan(backgroundColor),
-            start,
-            end,
-            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-          )
-        } catch (e: Exception) {
-          Log.e("ExpoSelectableTextView", "Invalid backgroundColor: $bgColor")
+      val start = (highlight["start"] as? Number)?.toInt()
+      val end = (highlight["end"] as? Number)?.toInt()
+      val id = highlight["id"] as? String
+
+      if (start != null && end != null && id != null) {
+        val clickableSpan = object : ClickableSpan() {
+          override fun onClick(widget: View) {
+            onHighlightClicked(mapOf("id" to id))
+          }
+          override fun updateDrawState(ds: TextPaint) {
+            // style highlights without underline
+            ds.isUnderlineText = false
+          }
         }
-      }
-      
-      // Apply text color if specified
-      (highlight["color"] as? String)?.let { textColor ->
-        try {
-          val foregroundColor = parseColor(textColor)
-          spannable.setSpan(
-            ForegroundColorSpan(foregroundColor),
-            start,
-            end,
-            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-          )
-        } catch (e: Exception) {
-          Log.e("ExpoSelectableTextView", "Invalid color: $textColor")
+        spannable.setSpan(clickableSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        
+        highlight["backgroundColor"]?.let {
+          val colorString = it as String
+          spannable.setSpan(BackgroundColorSpan(parseColor(colorString)), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        highlight["color"]?.let {
+          val colorString = it as String
+          spannable.setSpan(ForegroundColorSpan(parseColor(colorString)), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
       }
     }
-    
-    textView.text = spannable
   }
 }

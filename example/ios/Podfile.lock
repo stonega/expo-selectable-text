@@ -36,7 +36,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - ExpoSelectableText (0.4.3):
+  - ExpoSelectableText (0.4.4):
     - ExpoModulesCore
   - FBLazyVector (0.76.6)
   - fmt (9.1.0)
@@ -1783,7 +1783,7 @@ SPEC CHECKSUMS:
   ExpoFont: 8b14db1afebf62e9774613a082e402985f4e747c
   ExpoKeepAwake: 1f74cdf53ab3b3aeb7110f18eb053c92e7c3e710
   ExpoModulesCore: f9546265a5e1f1fd67473bb2f0463b28252cee49
-  ExpoSelectableText: 6d96889014e208178313d08dc1b742f4cb0f1676
+  ExpoSelectableText: 512c9b18cb1ea5beb1e51bda127eb7b8302a5bec
   FBLazyVector: be509404b5de73a64a74284edcaf73a5d1e128b1
   fmt: 10c6e61f4be25dc963c36bd73fc7b1705fe975be
   glog: 08b301085f15bcbb6ff8632a8ebaf239aae04e6a

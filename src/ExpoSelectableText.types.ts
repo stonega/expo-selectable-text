@@ -14,17 +14,23 @@ export type SelectionEndEventPayload = {
   };
 };
 
+export type HighlightClickedEventPayload = {
+  id: string;
+};
+
 export type TextHighlight = {
   start: number;
   end: number;
   backgroundColor?: string;
   color?: string;
+  id: string;
 };
 
 export type ExpoSelectableTextViewProps = {
   text?: string;
   onSelectionEnd?: (event: { nativeEvent: SelectionEndEventPayload }) => void;
   onSelecting?: (event: { nativeEvent: SelectionEndEventPayload }) => void;
+  onHighlightClicked?: (event: { nativeEvent: HighlightClickedEventPayload }) => void;
   fontSize?: number;
   fontFamily?: string;
   color?: string;
