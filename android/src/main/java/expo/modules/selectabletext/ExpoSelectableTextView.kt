@@ -41,14 +41,41 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
 
   internal val textView = object : TextView(context) {
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-      // This is the key change to allow text selection within a ScrollView
-      parent.requestDisallowInterceptTouchEvent(true)
-      return super.onTouchEvent(event)
-    }
-    
     override fun onSelectionChanged(selStart: Int, selEnd: Int) {
       super.onSelectionChanged(selStart, selEnd)
+
+      if (selStart != -1 && selEnd != -1 && selStart != selEnd) {
+        val currentSelectionStart = minOf(selStart, selEnd)
+        val currentSelectionEnd = maxOf(selStart, selEnd)
+
+        for (highlight in currentHighlights) {
+          val hStart = (highlight["start"] as? Number)?.toInt()
+          val hEnd = (highlight["end"] as? Number)?.toInt()
+
+          if (hStart != null && hEnd != null) {
+            // If the current selection already matches this highlight's bounds,
+            // let the normal selection logic proceed.
+            if (currentSelectionStart == hStart && currentSelectionEnd == hEnd) {
+              break
+            }
+
+            // Check if the current selection is contained within a highlight
+            if (currentSelectionStart >= hStart && currentSelectionEnd <= hEnd) {
+              // If it is, expand the selection to the full highlight.
+              // We must check if the text still supports spannable operations.
+              if (this.text is Spannable) {
+                // Using post to avoid interfering with the TextView's internal state updates
+                post {
+                  Selection.setSelection(this.text as Spannable, hStart, hEnd)
+                }
+              }
+              // Once we've decided to expand, we exit to avoid conflicting actions
+              // and wait for the new onSelectionChanged event.
+              return
+            }
+          }
+        }
+      }
       
       // Cancel any existing timer
       selectionTimer?.removeCallbacks(selectionRunnable)
@@ -61,9 +88,9 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
         if (selStart != -1 && selEnd != -1 && selStart != selEnd) {
           // Selection exists, update selectedText and start timer
           selectedText = if (selStart < selEnd) {
-            text.substring(selStart, selEnd)
+            this.text.substring(selStart, selEnd)
           } else {
-            text.substring(selEnd, selStart)
+            this.text.substring(selEnd, selStart)
           }
           
           if (selectedText.isNotEmpty()) {
