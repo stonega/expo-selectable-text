@@ -16,7 +16,6 @@ type Highlight = {
 export default function App() {
   const [selectedText, setSelectedText] = useState("");
   const [showPopup, setShowPopup] = useState(false);
-  const [selectionRect, setSelectionRect] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [highlights, setHighlights] = useState<Highlight[]>([
     {
       id: "1",
@@ -27,6 +26,7 @@ export default function App() {
     },
   ]);
   const [popupPosition, setPopupPosition] = useState({ x: 50, y: 50 });
+  const [clickedHighlight, setClickedHighlight] = useState<Highlight | null>(null);
   const textViewRef = useRef<ExpoSelectableTextViewRef>(null);
   const containerRef = useRef<View>(null);
   
@@ -47,39 +47,54 @@ export default function App() {
       </View>
     );
   }
+  const positionPopup = (rect: any) => {
+    if (containerRef.current) {
+      containerRef.current.measureInWindow((x, y, width, height) => {
+        const screenWidth = Dimensions.get('window').width;
+        const popupWidth = 150;
+        const popupHeight = 50;
+        let popupX = x + rect.x + 5;
+        let popupY = y + rect.y - popupHeight - 5;
+        // Adjust if popup goes off screen
+        if (popupX + popupWidth > screenWidth) {
+          popupX = screenWidth - popupWidth - 10;
+        }
+        if (popupX < 10) {
+          popupX = 10;
+        }
+        if (popupY < 50) {
+          popupY = y + rect.y + rect.height + 15 + 5;
+        }
+        setPopupPosition({ x: popupX, y: popupY });
+      });
+    }
+  }
 
   const handleSelectionEnd = (event: any) => {
     const { rect, text, cleared } = event.nativeEvent;
     console.log(Date.now(), "onSelectionEnd fired");
     if(text.trim().length === 0 || cleared) {
       setShowPopup(false);
+      setClickedHighlight(null);
       return;
     }
     if (text && text.trim().length > 0) {
-      setSelectedText(text);
-      setSelectionRect(rect);
-      setShowPopup(true);
-      // Calculate position immediately
-      if (containerRef.current) {
-        containerRef.current.measureInWindow((x, y, width, height) => {
-          const screenWidth = Dimensions.get('window').width;
-          const popupWidth = 150;
-          const popupHeight = 50;
-          let popupX = x + rect.x + 5;
-          let popupY = y + rect.y - popupHeight - 5;
-          // Adjust if popup goes off screen
-          if (popupX + popupWidth > screenWidth) {
-            popupX = screenWidth - popupWidth - 10;
-          }
-          if (popupX < 10) {
-            popupX = 10;
-          }
-          if (popupY < 50) {
-            popupY = y + rect.y + rect.height + 15 + 5;
-          }
-          setPopupPosition({ x: popupX, y: popupY });
-        });
+      // Check if selected text is within any existing highlight
+      const startIndex = LOREM_IPSUM.indexOf(text);
+      const endIndex = startIndex + text.length;
+      const existingHighlight = highlights.find(h => 
+        startIndex >= h.start && endIndex <= h.end
+      );
+      
+      if (existingHighlight) {
+        setClickedHighlight(existingHighlight);
+      } else {
+        setClickedHighlight(null);
       }
+      
+      setSelectedText(text);
+      setShowPopup(true);
+      positionPopup(rect);
     }
   };
 
@@ -103,6 +118,16 @@ export default function App() {
     }
     await textViewRef.current?.clearSelection();
     setShowPopup(false);
+    setClickedHighlight(null);
+  };
+
+  const handleClearHighlight = () => {
+    if (clickedHighlight) {
+      setHighlights(highlights.filter((h) => h.id !== clickedHighlight.id));
+    }
+    textViewRef.current?.clearSelection();
+    setShowPopup(false);
+    setClickedHighlight(null);
   };
 
   return (
@@ -118,10 +143,10 @@ export default function App() {
             selectionColor="#a0a0a0"
             onSelectionEnd={handleSelectionEnd}
             backgroundColor="#D2C1B6"
-            // onHighlightClicked={handleSelectionEnd}
             onSelecting={() => {
               console.log(Date.now(), "Selecting fired");
               setShowPopup(false);
+              setClickedHighlight(null);
             }}
             highlights={highlights}
             fontSize={20}
@@ -133,9 +158,9 @@ export default function App() {
 
       {/* Popup Menu - Absolute positioned */}
       {showPopup && (
-        <View 
+        <View
           style={[
-            styles.popupMenu, 
+            styles.popupMenu,
             {
               position: 'absolute',
               top: popupPosition.y,
@@ -144,9 +169,15 @@ export default function App() {
             }
           ]}
         >
-          <TouchableOpacity style={styles.menuItem} onPress={handleHighlight}>
-            <Text style={styles.menuItemText}>🔆 Highlight</Text>
-          </TouchableOpacity>
+          {clickedHighlight ? (
+            <TouchableOpacity style={styles.menuItem} onPress={handleClearHighlight}>
+              <Text style={styles.menuItemText}>Clear Highlight</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.menuItem} onPress={handleHighlight}>
+              <Text style={styles.menuItemText}>🔆 Highlight</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </SafeAreaView>
@@ -229,5 +260,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#2c3e50',
     fontWeight: '500',
+  },
+  textContainer: {
+    marginTop: 20,
+    width: '100%',
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+  },
+  text: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#34495e',
+  },
+  selectableText: {
+    height: 100,
+    backgroundColor: '#e0e0e0',
+    padding: 10,
+    borderRadius: 8,
   },
 });

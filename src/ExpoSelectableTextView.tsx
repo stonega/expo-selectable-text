@@ -1,5 +1,6 @@
-import React, { forwardRef, useImperativeHandle, useRef } from "react";
 import { requireNativeView } from "expo";
+import React, { forwardRef, useImperativeHandle, useRef } from "react";
+
 import type { ExpoSelectableTextViewProps } from "./ExpoSelectableText.types";
 
 const NativeView = requireNativeView("ExpoSelectableText");

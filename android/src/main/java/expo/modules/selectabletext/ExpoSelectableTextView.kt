@@ -28,7 +28,6 @@ import kotlin.math.sqrt
 class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoView(context, appContext) {
   private val onSelectionEnd by EventDispatcher()
   private val onSelecting by EventDispatcher()
-  private val onHighlightClicked by EventDispatcher()
 
   private var selectedText: String = ""
   private var lastSelectionStart = -1
@@ -323,7 +322,7 @@ class ExpoSelectableTextView(context: Context, appContext: AppContext) : ExpoVie
       if (start != null && end != null && id != null) {
         val clickableSpan = object : ClickableSpan() {
           override fun onClick(widget: View) {
-            onHighlightClicked(mapOf("id" to id))
+            // onHighlightClicked(mapOf("id" to id))
           }
           override fun updateDrawState(ds: TextPaint) {
             // style highlights without underline

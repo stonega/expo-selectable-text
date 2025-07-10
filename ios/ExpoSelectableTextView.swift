@@ -18,7 +18,6 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
   let textView = CustomTextView()
   let onSelectionEnd = EventDispatcher()
   let onSelecting = EventDispatcher()
-  let onHighlightClicked = EventDispatcher()
 
   var selectedText: String = ""
   private var selectionEndTimer: Timer?
@@ -45,11 +44,6 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
     
     // Add gesture recognizer to detect when selection gestures begin
     setupSelectionMonitoring()
-
-    // Add tap gesture recognizer for highlight clicks
-    let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTapOnText(_:)))
-    tapGesture.delegate = self
-    textView.addGestureRecognizer(tapGesture)
   }
   
   private func setupSelectionMonitoring() {
@@ -87,22 +81,6 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
     default:
       break
     }
-  }
-  
-  @objc private func handleTapOnText(_ gesture: UITapGestureRecognizer) {
-      let location = gesture.location(in: textView)
-      let layoutManager = textView.layoutManager
-      let characterIndex = layoutManager.characterIndex(for: location, in: textView.textContainer, fractionOfDistanceBetweenInsertionPoints: nil)
-
-      if characterIndex < textView.textStorage.length {
-          let attributes = textView.textStorage.attributes(at: characterIndex, effectiveRange: nil)
-          if let highlightID = attributes[NSAttributedString.Key(rawValue: "highlightID")] as? String {
-              onHighlightClicked(["id": highlightID])
-              // Prevent the tap from causing text selection
-              textView.isSelectable = false
-              textView.isSelectable = true
-          }
-      }
   }
   
   private func startSelectionMonitoring() {

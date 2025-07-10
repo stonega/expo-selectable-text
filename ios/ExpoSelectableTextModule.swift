@@ -16,7 +16,7 @@ public class ExpoSelectableTextModule: Module {
     ])
 
     // Defines event names that the module can send to JavaScript.
-    Events("onChange", "onSelectionEnd", "onSelecting", "onHighlightClicked")
+    Events("onChange", "onSelectionEnd", "onSelecting")
 
     // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
     Function("hello") {
