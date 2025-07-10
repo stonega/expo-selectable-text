@@ -116,6 +116,31 @@ class ExpoSelectableTextView: ExpoView, UITextViewDelegate {
     let currentStart = selectedRange.location
     let currentEnd = selectedRange.location + selectedRange.length
     
+    // Check if a selection is being made inside a highlight and expand it
+    if selectedRange.length > 0 {
+      for highlight in currentHighlights {
+        if let hStart = highlight["start"] as? Int,
+           let hEnd = highlight["end"] as? Int {
+          
+          // If the current selection already matches this highlight's bounds,
+          // let the normal selection logic proceed.
+          if currentStart == hStart && currentEnd == hEnd {
+            break
+          }
+
+          // Check if the current selection is contained within a highlight
+          if currentStart >= hStart && currentEnd <= hEnd {
+            let newRange = NSRange(location: hStart, length: hEnd - hStart)
+            if textView.selectedRange != newRange {
+              textView.selectedRange = newRange
+            }
+            // A new selection change will be triggered, so we can stop here
+            return
+          }
+        }
+      }
+    }
+    
     // Check if selection has changed
     if currentStart != lastSelectionStart || currentEnd != lastSelectionEnd {
       lastSelectionStart = currentStart
